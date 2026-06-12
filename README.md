@@ -211,3 +211,16 @@ python eval.py
       primaryClass={cs.CV}
 }
 ```
+
+## Known-Working Environment
+
+| Property | Value |
+|----------|-------|
+| OS | Ubuntu 22.04 / Windows 11 |
+| Python | 3.8.10+ (3.10 recommended) |
+| PyTorch | 2.0+ |
+| CUDA | Optional (GPU recommended for training) |
+
+## Course Context
+
+Seminar Multimedia and Deep Learning — Semester 1, VU Amsterdam AI Master's programme.
