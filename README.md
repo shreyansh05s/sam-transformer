@@ -223,4 +223,4 @@ python eval.py
 
 ## Course Context
 
-Seminar Multimedia and Deep Learning — Semester 1, VU Amsterdam AI Master's programme.
+Seminar Multimedia and Deep Learning — Semester 1, Leiden University MSc Computer Science (AI) programme.
