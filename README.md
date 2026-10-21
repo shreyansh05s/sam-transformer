@@ -1,226 +1,94 @@
-# Sharpness Aware Transformers for Cost-Efficient Image Classification
+# SAM Transformer
 
-## Table of Contents
+<p align="center"><img src="assets/banner.svg" alt="SAM Transformer — sharpness-aware fine-tuning for CIFAR-100 image classification" width="100%" /></p>
 
-- [Sharpness Aware Transformers for Cost-Efficient Image Classification](#sharpness-aware-transformers-for-cost-efficient-image-classification)
-  - [Overview](#overview)
-  - [Installation](#installation)
-      - [Additional setup for wandb logging](#additional-setup-for-wandb-logging)
-  - [Dataset](#dataset)
-  - [Training](#training)
-  - [Evaluation](#evaluation)
-  - [Hyperparameter Tuning](#hyperparameter-tuning)
-  - [Experiments](#experiments)
-    - [VIT](#vit)
-    - [VIT-COSINE](#vit-cosine)
-    - [VIT-ASAM](#vit-asam)
-    - [SWIN-ASAM](#swin-asam)
-  - [Benchmarking](#benchmarking)
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-PyTorch-3776AB?logo=python&amp;logoColor=white" alt="Python and PyTorch"></a>
+  <a href="https://huggingface.co/docs/transformers"><img src="https://img.shields.io/badge/Hugging%20Face-Transformers-FFD21E?logo=huggingface&amp;logoColor=black" alt="Hugging Face Transformers"></a>
+  <img src="https://img.shields.io/badge/status-research%20prototype-6b5ce7" alt="Status: research prototype">
+</p>
 
-## Overview
+**SAM Transformer** is a PyTorch research project for comparing pretrained vision architectures on CIFAR-100. It fine-tunes Vision Transformer and Swin Transformer variants with Adam or adaptive Sharpness-Aware Minimization (SAM), then evaluates saved checkpoints alongside reference ViT, Swin, and ResNet models.
 
-This is a Pytorch implementation of Huggingface models for image classification.
-Models include:
-- [ViT](https://arxiv.org/abs/2010.11929)
-- [Swin Transformer](https://arxiv.org/abs/2103.14030)
-- [ResNet](https://arxiv.org/abs/1512.03385)
+## Highlights
 
-Datasets included:
-- [CIFAR100](https://www.cs.toronto.edu/~kriz/cifar.html)
+- Fine-tunes Hugging Face image classifiers for 100 CIFAR-100 classes.
+- Implements a two-step, adaptive SAM update; Adam is also supported.
+- Supports ViT, CvT, Swin V2, ViT Hybrid, and ViT-MSN training configurations.
+- Saves checkpoints per epoch and at the end of a run under `models/<model>/`.
+- Evaluates a selected model or writes a ranked `results.json` after all configured models run.
+- Offers optional Weights & Biases logging for loss, learning rate, and accuracy.
 
-Optimizer:
-- [AdamW](https://arxiv.org/abs/1711.05101)
-- [SAM](https://arxiv.org/abs/2010.01412)
+## How it works
 
-## Installation
+```mermaid
+flowchart LR
+    A[CIFAR-100] --> B[Hugging Face image processor]
+    B --> C[Pretrained vision backbone]
+    C --> D{Optimizer}
+    D -->|Adam| E[Parameter update]
+    D -->|Adaptive SAM| F[Perturb weights → second backward pass → update]
+    E --> G[Checkpoint & test accuracy]
+    F --> G
+```
 
-First insure python 3.8.10 or higher is installed.
+`train.py` downloads CIFAR-100 into `data/`, applies the selected model's image processor, and configures 100 labels. SAM runs take an ascent step, calculate a second gradient pass, and then update the parameters. `eval.py` can load local SAM checkpoints or hosted reference models.
 
-Then create a virtual environment.
+## Tech stack
+
+| Area | Tools |
+| --- | --- |
+| Training | Python, PyTorch, torchvision |
+| Models | Hugging Face Transformers — ViT, Swin V2, CvT, ViT Hybrid, ViT-MSN |
+| Data | CIFAR-100 |
+| Optimization | Adam, adaptive SAM, StepLR, cosine annealing |
+| Tracking | Weights & Biases (optional) |
+
+## Quick start
 
 ```bash
 python -m venv venv
-```
-
-Activate the virtual environment.
-
-```bash
-source venv/bin/activate
-```
-
-Install the requirements.
-
-```bash
 pip install -r requirements.txt
 ```
 
-### Additional setup for wandb logging
-
-- If you want to use wandb logging, you will need to create an account at [wandb.ai](https://wandb.ai/).
-
-- Then get your API key from [wandb.ai/authorize](https://wandb.ai/authorize).
-
-- Then login to wandb from the command line.
-
-```bash
-wandb login
-```
-
-## Dataset
-
-The CIFAR100 dataset is included in the `datasets` library. The dataset is downloaded and extracted automatically when the `train.py` or `eval.py` script is run.
-
-## Training
-
-To train a model, we can call the `train.py` script, whose arguments can be found by running the following:
+Inspect the CLI and run the tracked ViT + SAM configuration:
 
 ```bash
 python train.py --help
-```
-
-For example, to train a ViT model on CIFAR100, we can run the following:
-
-```bash
 python train.py --model vit --batch_size 32 --epochs 5 --lr 0.01 --optimizer sam
 ```
 
-For training with wandb logging, we can run the following:
-
-```bash
-python train.py --model vit --batch_size 32 --epochs 5 --lr 0.01 --optimizer sam -W
-```
-
-
-## Evaluation
-
-To evaluate a model, we can call the `eval.py` script, whose arguments can be found by running the following:
-
-```bash
-python eval.py --help
-```
-
-For example, to evaluate a ViT model on CIFAR100, we can run the following:
+Evaluate one configured model, or all configured models to regenerate `results.json`:
 
 ```bash
 python eval.py --model VIT
-```
-
-For Evaluation on all models, we can run the following:
-
-```bash
 python eval.py
 ```
 
-## Hyperparameter Tuning
+> The scripts download CIFAR-100 and pretrained model assets when first needed. CUDA is used automatically when available.
 
-Hyperparameter tuning was done manually by running variations of arguments in the `train.py` script. The best performing hyperparameters were then used for the experiments.
+## Project structure
 
-Default hyperparameters can be found in the `train.py` script. And can be seen in the table below:
-
-| Hyperparameter | Default Value |
-| -------------- | ------------- |
-| batch_size     | 32            |
-| epochs         | 5             |
-| lr             | 0.01          |
-| optimizer      | sam           |
-| scheduler      | step          |
-| gamma          | 0.95          |
-| momentum       | 0.9           |
-| step_size      | 100           |
-
-## Experiments
-
-In this section, we will highlight steps to reproduce the experiments in the paper. Run all commands below:
-
-### VIT
-
-To train a ViT model on CIFAR100, we can run the following(also referred to as the VIT-ADAM experiment):
-
-```bash
-python train.py --model vit --batch_size 32 --epochs 5 --lr 0.01 --optimizer adam --scheduler step
+```text
+.
+├── train.py             # fine-tuning loop, schedulers, checkpointing
+├── eval.py              # CIFAR-100 evaluation and result export
+├── model.py             # Hugging Face classifier wrapper
+├── sam.py               # adaptive SAM optimizer implementation
+├── results.json         # saved benchmark output
+├── cifar100_classes.json
+├── report/              # accompanying course report and paper assets
+└── assets/banner.svg    # repository banner
 ```
 
-### VIT-COSINE
+## Results & learnings
 
-To train a ViT model with cosine decay on CIFAR100, we can run the following:
+The checked-in `results.json` records CIFAR-100 accuracies for five configured runs. Its top entry is **VIT-ASAM: 0.9285**, followed by **SWIN-ASAM: 0.9202**. The accompanying report describes these as experimental results and notes that the Adam/ASAM comparison was not a fully balanced hyperparameter study. Treat the values as this repository's reported benchmark snapshot, not a general performance claim.
 
-```bash
-python train.py --model vit --batch_size 32 --epochs 5 --lr 0.01 --optimizer adam --scheduler cosine
-```
+## Reference
 
-### VIT-ASAM
+The SAM optimizer implementation is adapted from the [official SAM implementation](https://github.com/davda54/sam), based on *Sharpness-Aware Minimization for Efficiently Improving Generalization*.
 
-To train a ViT model with SAM optimizer on CIFAR100, we can run the following(also referred to as the VIT-STEP experiment):
+---
 
-```bash
-python train.py --model vit --batch_size 32 --epochs 5 --lr 0.01 --optimizer sam
-```
-
-### SWIN-ASAM
-
-To train a Swin Transformer model with SAM optimizer on CIFAR100, we can run the following(also referred to as the SWIN-ASAM-FROZEN experiment):
-
-```bash
-python train.py --model swin --batch_size 32 --epochs 5 --lr 0.01 --optimizer sam --freeze
-```
-
-## Benchmarking
-
-To benchmark all models on CIFAR100, we can run the following:
-
-```bash
-python eval.py
-```
-
-## Notes
-
-- The batch size utilized for experiments is 32. Depending on your GPU memory, you may need to adjust this value.
-
-<!-- cite sam.py -->
-## References
-
-```bibtex
-@misc{foret2021sharpnessaware,
-      title={Sharpness-Aware Minimization for Efficiently Improving Generalization}, 
-      author={Pierre Foret and Ariel Kleiner and Hossein Mobahi and Behnam Neyshabur},
-      year={2021},
-      eprint={2010.01412},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
-```
-
-```bibtex
-@misc{liu2021swin,
-      title={Swin Transformer: Hierarchical Vision Transformer using Shifted Windows}, 
-      author={Ze Liu and Yutong Lin and Yue Cao and Han Hu and Yixuan Wei and Zheng Zhang and Stephen Lin and Baining Guo},
-      year={2021},
-      eprint={2103.14030},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-```
-
-```bibtex
-@misc{dosovitskiy2020image,
-      title={An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale}, 
-      author={Alexey Dosovitskiy and Lucas Beyer and Alexander Kolesnikov and Dirk Weissenborn and Xiaohua Zhai and Thomas Unterthiner and Mostafa Dehghani and Matthias Minderer and Georg Heigold and Sylvain Gelly and Jakob Uszkoreit and Neil Houlsby},
-      year={2020},
-      eprint={2010.11929},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
-```
-
-## Known-Working Environment
-
-| Property | Value |
-|----------|-------|
-| OS | Ubuntu 22.04 / Windows 11 |
-| Python | 3.8.10+ (3.10 recommended) |
-| PyTorch | 2.0+ |
-| CUDA | Optional (GPU recommended for training) |
-
-## Course Context
-
-Seminar Multimedia and Deep Learning — Semester 1, Leiden University MSc Computer Science (AI) programme.
+Leiden University MSc Computer Science (AI) course project.
