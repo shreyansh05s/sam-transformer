@@ -15,3 +15,13 @@
 *.out
 *.toc
 *.blg
+.venv/
+.env
+.idea/
+.vscode/
+.DS_Store
+__pycache__/
+*.pt
+*.ckpt
+*.safetensors
+models/

@@ -44,14 +44,19 @@ flowchart LR
 | Optimization | Adam, adaptive SAM, StepLR, cosine annealing |
 | Tracking | Weights & Biases (optional) |
 
-## Quick start
+## Installation
+
+Python 3.9+ and a CUDA GPU are recommended (CPU works but is slow). Versions are unpinned in `requirements.txt`; no specific version combination has been recorded as tested.
 
 ```bash
-python -m venv venv
+python -m venv .venv
+source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Inspect the CLI and run the tracked ViT + SAM configuration:
+(Conda alternative: `conda create -n sam-transformer python=3.10 && conda activate sam-transformer`, then `pip install -r requirements.txt`.)
+
+## Usage
 
 ```bash
 python train.py --help
@@ -65,7 +70,7 @@ python eval.py --model VIT
 python eval.py
 ```
 
-> The scripts download CIFAR-100 and pretrained model assets when first needed. CUDA is used automatically when available.
+> CIFAR-100 (into `data/`) and pretrained model assets are downloaded automatically on first use. Checkpoints are written to `models/<model>/` (git-ignored). Weights & Biases logging is optional (`--use_wandb`).
 
 ## Project structure
 
@@ -75,9 +80,10 @@ python eval.py
 ├── eval.py              # CIFAR-100 evaluation and result export
 ├── model.py             # Hugging Face classifier wrapper
 ├── sam.py               # adaptive SAM optimizer implementation
+├── LICENSE / NOTICE     # GPL-3.0; MIT attribution for sam.py
 ├── results.json         # saved benchmark output
 ├── cifar100_classes.json
-├── report/              # accompanying course report and paper assets
+├── report/              # course report (main.tex, main.pdf) and its figures
 └── assets/banner.svg    # repository banner
 ```
 
@@ -85,10 +91,12 @@ python eval.py
 
 The checked-in `results.json` records CIFAR-100 accuracies for five configured runs. Its top entry is **VIT-ASAM: 0.9285**, followed by **SWIN-ASAM: 0.9202**. The accompanying report describes these as experimental results and notes that the Adam/ASAM comparison was not a fully balanced hyperparameter study. Treat the values as this repository's reported benchmark snapshot, not a general performance claim.
 
-## Reference
+**Limitations.** Trained checkpoints are not included; results are from a single run each and are not re-verified here.
 
-The SAM optimizer implementation is adapted from the [official SAM implementation](https://github.com/davda54/sam), based on *Sharpness-Aware Minimization for Efficiently Improving Generalization*.
+## Licence
 
----
+Released under the [GNU GPL v3.0](LICENSE). `sam.py` is adapted from the [official SAM implementation](https://github.com/davda54/sam) (MIT, Copyright (c) 2021 David Samuel; GPL-compatible), see [NOTICE](NOTICE). Based on *Sharpness-Aware Minimization for Efficiently Improving Generalization*.
 
-Leiden University MSc Computer Science (AI) course project.
+## Author
+
+Shreyansh (shreyansh05s on GitHub). Leiden University MSc Computer Science (AI) course project.
